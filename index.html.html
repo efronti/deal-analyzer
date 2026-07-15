@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Development Deal Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#FAFAF8;--white:#FFFFFF;--card:#FFFFFF;
+  --border:#E0DFD8;--border-strong:#C0BFB8;
+  --text:#1A1A18;--text2:#52514E;--text3:#898781;
+  --navy:#1A3A6A;--navy-lt:#EBF0F8;--navy-mid:#2A5A9A;
+  --green:#1A6A3A;--green-lt:#EBF5EF;
+  --amber:#7A4A0A;--amber-lt:#FBF3E8;
+  --red:#8A1A1A;--red-lt:#FBEAEA;
+  --gold:#8A6A1A;--gold-lt:#FBF5E8;
+  --rule:#E8E7E0;
+}
+/* DARK MODE */
+html.dark{
+  --bg:#161614;--white:#1F1F1C;--card:#1F1F1C;
+  --border:#3A3A35;--border-strong:#5A5A54;
+  --text:#F2EDE4;--text2:#C8C8BE;--text3:#7A7A72;
+  --navy:#4A8AE8;--navy-lt:rgba(74,138,232,0.12);--navy-mid:#3A7AD8;
+  --green:#4AAA6A;--green-lt:rgba(74,170,106,0.12);
+  --amber:#D4A04A;--amber-lt:rgba(212,160,74,0.12);
+  --red:#D46A6A;--red-lt:rgba(212,106,106,0.12);
+  --gold:#C8A84A;--gold-lt:rgba(200,168,74,0.12);
+  --rule:#2C2C28;
+}
+html.dark .field input,html.dark .field select{background:#2C2C28;color:var(--text);border-color:var(--border)}
+html.dark .kpi{background:var(--card)}
+html.dark .kpi.good{background:var(--green-lt)}
+html.dark .kpi.warn{background:var(--amber-lt)}
+html.dark .kpi.bad{background:var(--red-lt)}
+html.dark .kpi.navy{background:var(--navy-lt)}
+html.dark .deals-bar{background:var(--navy-lt);border-color:var(--navy)}
+html.dark .deal-chip{background:var(--card);border-color:var(--border)}
+html.dark .deal-chip.loaded{background:var(--navy-lt)}
+html.dark .deal-card{background:var(--mid,#2C2C28);border-color:var(--border)}
+html.dark .deal-card:hover{border-color:var(--border-strong)}
+html.dark .deal-card.selected{background:var(--navy-lt);border-color:var(--navy)}
+html.dark .deal-card-btn{background:var(--card);color:var(--text2);border-color:var(--border)}
+html.dark .deals-empty{border-color:var(--border)}
+html.dark .lde-input{background:#2C2C28;color:var(--text);border-color:var(--border)}
+html.dark .max-override input{background:#2C2C28;color:var(--text);border-color:var(--border)}
+html.dark .ctable th{background:#2A5A9A}
+html.dark .ctable tr:nth-child(even) td{background:#252522}
+html.dark .ctable .tot-row td{background:var(--navy-lt)}
+html.dark .wb-wrap{background:#2C2C28}
+html.dark .lde-bar-wrap{background:#2C2C28}
+
+/* PRINT — always minimal, light, no color flood */
+@media print{
+  html,html.dark{
+    --bg:#fff;--white:#fff;--card:#fff;
+    --border:#D0D0C8;--border-strong:#A0A098;
+    --text:#000;--text2:#333;--text3:#666;
+    --navy:#1A3A6A;--navy-lt:#fff;
+    --green:#1A5A2A;--green-lt:#fff;
+    --amber:#5A3A00;--amber-lt:#fff;
+    --red:#6A0000;--red-lt:#fff;
+    --rule:#E0E0D8;
+  }
+  body{font-size:10px;background:#fff}
+}
+
+body{background:var(--bg);font-family:'Inter',sans-serif;color:var(--text);font-size:14px;line-height:1.5;transition:background .2s,color .2s}
+h1,h2,h3{font-weight:500}
+
+/* LAYOUT */
+.topbar{background:var(--navy);color:#fff;padding:.6rem 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;print:none}
+.topbar-title{font-size:13px;font-weight:600;letter-spacing:.04em;color:#fff}
+.topbar-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{padding:5px 12px;font-size:11px;font-weight:500;border-radius:5px;cursor:pointer;border:1px solid;font-family:inherit;transition:all .15s}
+.btn-primary{background:var(--navy);color:#fff;border-color:var(--navy-mid)}
+.btn-outline{background:#fff;color:var(--navy);border-color:var(--navy)}
+.btn-ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,0.4)}
+.btn-ghost:hover{background:rgba(255,255,255,.1)}
+.btn-sm{padding:3px 8px;font-size:10px}
+.btn-green{background:var(--green);color:#fff;border-color:var(--green)}
+.btn-amber{background:var(--amber);color:#fff;border-color:var(--amber)}
+.btn-red{background:var(--red);color:#fff;border-color:var(--red)}
+.page{max-width:980px;margin:0 auto;padding:1.25rem 1rem 3rem}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+
+/* PANELS */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.25rem;margin-bottom:1.1rem}
+.panel-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:.9rem;padding-bottom:.6rem;border-bottom:1px solid var(--rule)}
+.panel-title span{color:var(--navy);font-size:13px;font-weight:500;text-transform:none;letter-spacing:0}
+
+/* INPUTS */
+.field{margin-bottom:.75rem}
+.field label{display:block;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:4px}
+.field input,.field select{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px;color:var(--text);background:#fff;outline:none;transition:border .15s}
+.field input:focus,.field select:focus{border-color:var(--navy)}
+.field .hint{font-size:10px;color:var(--text3);margin-top:3px}
+.fields-row{display:grid;gap:10px}
+.fields-row.col2{grid-template-columns:1fr 1fr}
+.fields-row.col3{grid-template-columns:repeat(3,1fr)}
+.fields-row.col4{grid-template-columns:repeat(4,1fr)}
+
+/* TOGGLES */
+.toggle-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);cursor:pointer;margin-bottom:.75rem}
+.toggle{position:relative;width:36px;height:20px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:var(--border-strong);border-radius:10px;transition:.2s;cursor:pointer}
+.toggle-slider:before{content:'';position:absolute;width:14px;height:14px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.2s}
+.toggle input:checked + .toggle-slider{background:var(--navy)}
+.toggle input:checked + .toggle-slider:before{transform:translateX(16px)}
+
+/* SLIDERS */
+.slider-group{margin-bottom:1rem}
+.sl-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.sl-label{font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.08em;color:var(--text3)}
+.sl-val-wrap{display:flex;align-items:center;gap:6px}
+.sl-val{font-size:18px;font-weight:500;color:var(--text)}
+.sl-val.navy{color:var(--navy)}
+.sl-sub{font-size:10px;color:var(--text3);margin-bottom:4px}
+.sl-ends{display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-top:3px}
+input[type=range]{width:100%;height:4px;border-radius:2px;background:var(--border);outline:none;-webkit-appearance:none;cursor:pointer;accent-color:var(--navy)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:15px;height:15px;border-radius:50%;background:var(--navy);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:var(--navy);cursor:pointer;border:none}
+.max-override{display:flex;align-items:center;gap:6px;margin-top:4px}
+.max-override label{font-size:9px;color:var(--text3)}
+.max-override input{width:90px;padding:3px 6px;font-size:11px;border:1px solid var(--border);border-radius:4px;font-family:inherit}
+
+/* LAND DEV ESTIMATOR */
+.lde-row{display:grid;grid-template-columns:170px 1fr 90px 100px;gap:8px;align-items:center;padding:5px 0;border-bottom:.5px solid var(--rule)}
+.lde-row:last-child{border-bottom:none}
+.lde-row.head{padding-bottom:6px;border-bottom:1px solid var(--border-strong)}
+.lde-label{font-size:11px;color:var(--text2)}
+.lde-label.head{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text3)}
+.lde-bar-wrap{height:10px;border-radius:2px;background:var(--bg);overflow:hidden;border:1px solid var(--border)}
+.lde-bar{height:100%;border-radius:2px;background:var(--amber);transition:width .25s}
+.lde-auto{font-size:11px;color:var(--text3);text-align:right}
+.lde-input{width:90px;padding:3px 6px;font-size:11px;border:1px solid var(--border);border-radius:4px;text-align:right;font-family:inherit}
+.lde-total{display:flex;justify-content:space-between;align-items:center;padding-top:8px;margin-top:6px;border-top:1.5px solid var(--border-strong);font-weight:500}
+
+/* KPIS */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.1rem}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.75rem .9rem}
+.kpi.good{border-color:var(--green);background:var(--green-lt)}
+.kpi.warn{border-color:var(--amber);background:var(--amber-lt)}
+.kpi.bad{border-color:var(--red);background:var(--red-lt)}
+.kpi.navy{border-color:var(--navy);background:var(--navy-lt)}
+.k-label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--text3);margin-bottom:3px;line-height:1.3}
+.k-val{font-size:16px;font-weight:600;color:var(--text);line-height:1}
+.k-val.g{color:var(--green)}.k-val.n{color:var(--navy)}.k-val.a{color:var(--amber)}.k-val.r{color:var(--red)}
+.k-sub{font-size:10px;color:var(--text3);margin-top:3px;line-height:1.3}
+.h{display:inline-block;font-size:8px;font-weight:600;padding:1px 5px;border-radius:3px;margin-left:4px}
+.hg{background:rgba(26,106,58,.15);color:var(--green)}
+.hw{background:rgba(122,74,10,.15);color:var(--amber)}
+.hb{background:rgba(138,26,26,.15);color:var(--red)}
+
+/* WATERFALL */
+.wf-table{width:100%}
+.wr{display:grid;grid-template-columns:185px 1fr 100px;gap:8px;align-items:center;padding:4px 0;border-bottom:.5px solid var(--rule)}
+.wr:last-child{border-bottom:none}
+.wr.sub .wl{color:var(--text3);font-size:11px;padding-left:14px}
+.wr.tot{padding-top:7px;border-top:1.5px solid var(--border-strong);border-bottom:none;margin-top:2px}
+.wr.tot .wl{font-weight:600;color:var(--text)}
+.wl{font-size:11px;color:var(--text2)}
+.wb-wrap{height:11px;border-radius:2px;background:var(--bg);overflow:hidden;border:1px solid var(--border)}
+.wb-inner{height:100%;border-radius:2px;transition:width .25s}
+.wv{font-size:11px;font-weight:500;text-align:right;white-space:nowrap}
+.wv.r{color:var(--red)}.wv.g{color:var(--green)}.wv.n{color:var(--navy)}.wv.a{color:var(--amber)}
+
+/* PARTIES */
+.party-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:1.1rem}
+.party{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.85rem 1rem;border-top:3px solid var(--border)}
+.party.priv{border-top-color:var(--navy)}
+.party.bob{border-top-color:var(--amber)}
+.party.ej{border-top-color:var(--green);background:var(--green-lt)}
+.p-name{font-size:12px;font-weight:600;color:var(--text);margin-bottom:1px}
+.p-role{font-size:10px;color:var(--text3);margin-bottom:8px;line-height:1.3}
+.p-row{display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:.5px solid var(--rule)}
+.p-row:last-child{border-bottom:none}
+.p-rl{color:var(--text3)}
+.p-rv{font-weight:500;color:var(--text)}
+.p-rv.n{color:var(--navy)}.p-rv.a{color:var(--amber)}.p-rv.g{color:var(--green)}.p-rv.mu{color:var(--text3)}
+.p-tot{display:flex;justify-content:space-between;align-items:baseline;padding-top:6px;margin-top:3px;border-top:1.5px solid var(--border-strong)}
+.p-tl{font-size:11px;font-weight:600;color:var(--text)}
+.p-tv{font-size:15px;font-weight:600}
+.priv .p-tv{color:var(--navy)}.bob .p-tv{color:var(--amber)}.ej .p-tv{color:var(--green)}
+
+/* SAVED DEALS */
+.deals-bar{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem;margin-bottom:1.1rem}
+.deals-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;padding-bottom:.6rem;border-bottom:1px solid var(--rule)}
+.deals-header-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--text3)}
+.deals-header-hint{font-size:10px;color:var(--text3)}
+.compare-status{font-size:11px;font-weight:500;color:var(--navy);background:var(--navy-lt);padding:3px 10px;border-radius:10px;display:none}
+.compare-status.show{display:inline-block}
+.deals-empty{font-size:12px;color:var(--text3);padding:.75rem;text-align:center;border:1px dashed var(--border);border-radius:8px}
+.deals-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.deal-card{background:var(--bg);border:2px solid var(--border);border-radius:8px;padding:.75rem 1rem;cursor:pointer;transition:border-color .15s,background .15s;position:relative}
+.deal-card:hover{border-color:var(--border-strong)}
+.deal-card.selected{border-color:var(--navy);background:var(--navy-lt)}
+.deal-card.loaded-deal{border-color:var(--green);background:var(--green-lt)}
+.deal-card-check{position:absolute;top:.6rem;right:.6rem;width:18px;height:18px;border-radius:4px;border:2px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;transition:all .15s}
+.deal-card.selected .deal-card-check{background:var(--navy);border-color:var(--navy);color:#fff}
+.deal-card-name{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;padding-right:24px;line-height:1.2}
+.deal-card-loc{font-size:10px;color:var(--text3);margin-bottom:.5rem}
+.deal-card-stats{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.deal-stat{font-size:10px}
+.deal-stat-label{color:var(--text3)}
+.deal-stat-val{font-weight:600;color:var(--text)}
+.deal-stat-val.g{color:var(--green)}.deal-stat-val.n{color:var(--navy)}.deal-stat-val.a{color:var(--amber)}.deal-stat-val.r{color:var(--red)}
+.deal-card-actions{display:flex;gap:6px;margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--rule)}
+.deal-card-btn{font-size:10px;font-weight:500;padding:2px 8px;border-radius:4px;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--text2);font-family:inherit}
+.deal-card-btn:hover{border-color:var(--border-strong)}
+.deal-card-btn.del{color:var(--red);border-color:transparent}
+.deal-card-btn.load{color:var(--navy);border-color:var(--navy)}
+
+/* COMPARISON TABLE */
+.compare-panel{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1.1rem 1.25rem;margin-bottom:1.1rem;display:none}
+.compare-panel.show{display:block}
+.ctable{width:100%;border-collapse:collapse;font-size:12px}
+.ctable th{background:var(--navy);color:#fff;padding:6px 10px;text-align:right;font-weight:500;font-size:10px}
+.ctable th:first-child{text-align:left}
+.ctable td{padding:5px 10px;border-bottom:.5px solid var(--rule);text-align:right}
+.ctable td:first-child{text-align:left;color:var(--text2);font-size:11px}
+.ctable tr:nth-child(even) td{background:var(--bg)}
+.ctable .best{color:var(--green);font-weight:600}
+.ctable .worst{color:var(--red)}
+.ctable .tot-row td{font-weight:600;border-top:1.5px solid var(--border-strong);background:var(--navy-lt)}
+
+/* WARN BANNER */
+.warn-banner{padding:.7rem 1rem;background:var(--red-lt);border:1px solid #C08080;border-radius:8px;font-size:11px;color:var(--red);margin-bottom:1rem}
+
+/* NOTE */
+.note{padding:.85rem 1rem;background:var(--navy-lt);border-radius:8px;font-size:11px;color:var(--text2);line-height:1.7;border-left:3px solid var(--navy);margin-bottom:1.1rem}
+.note strong{color:var(--text);font-weight:600}
+
+/* BADGE */
+.badge{display:inline-block;font-size:9px;font-weight:600;padding:1px 6px;border-radius:3px;margin-left:4px}
+.badge-g{background:var(--green-lt);color:var(--green)}
+.badge-a{background:var(--amber-lt);color:var(--amber)}
+.badge-r{background:var(--red-lt);color:var(--red)}
+
+/* DIVIDER */
+.divider{height:1px;background:var(--rule);margin:1rem 0}
+
+/* PRINT STYLES — minimal ink, no color flood */
+@media print{
+  .topbar,.deals-bar,.compare-panel,.no-print,
+  input[type=range],.max-override,.btn,
+  .sl-ends{display:none!important}
+  body{font-size:10px;background:#fff!important;color:#000!important}
+  .page{padding:.4rem;max-width:100%}
+  .panel{
+    break-inside:avoid;margin-bottom:.6rem;padding:.7rem;
+    background:#fff!important;border:1px solid #C0C0B8!important;
+    border-radius:4px!important;box-shadow:none!important
+  }
+  .panel-title{color:#333!important;border-bottom-color:#C0C0B8!important}
+  .kpi-grid{grid-template-columns:repeat(4,1fr)!important}
+  .kpi{
+    background:#fff!important;border:1px solid #C0C0B8!important;
+    border-radius:4px!important
+  }
+  .kpi.good,.kpi.warn,.kpi.bad,.kpi.navy{background:#fff!important}
+  .k-val{color:#000!important}
+  .k-val.g{color:#1A5A2A!important}
+  .k-val.n{color:#1A3A6A!important}
+  .k-val.a{color:#5A3A00!important}
+  .k-val.r{color:#6A0000!important}
+  .party-grid{grid-template-columns:repeat(3,1fr)!important}
+  .party{background:#fff!important;border:1px solid #C0C0B8!important;border-radius:4px!important}
+  .party.priv{border-top:2px solid #1A3A6A!important}
+  .party.bob{border-top:2px solid #5A3A00!important}
+  .party.ej{background:#fff!important;border-top:2px solid #1A5A2A!important}
+  .wf-table .wb-wrap{display:none}
+  .wr{grid-template-columns:200px 1fr!important}
+  .wv.r{color:#6A0000!important}
+  .wv.g{color:#1A5A2A!important}
+  .wv.n{color:#1A3A6A!important}
+  .wv.a{color:#5A3A00!important}
+  .slider-group{margin-bottom:.4rem}
+  .sl-val{font-size:13px!important;color:#000!important}
+  .sl-sub{color:#555!important}
+  .note{background:#fff!important;border-left:3px solid #1A3A6A!important;color:#333!important}
+  .note strong{color:#000!important}
+  .warn-banner{background:#fff!important;border:1px solid #6A0000!important;color:#6A0000!important}
+  .toggle-row{margin-bottom:.3rem}
+  .lde-bar-wrap{display:none}
+  .lde-row{grid-template-columns:170px 1fr 90px!important}
+  .fields-row.col4{grid-template-columns:1fr 1fr!important}
+  .grid2{grid-template-columns:1fr 1fr!important}
+  .h.hg{background:#E8F5EE!important;color:#1A5A2A!important}
+  .h.hw{background:#FBF3E8!important;color:#5A3A00!important}
+  .h.hb{background:#FBEAEA!important;color:#6A0000!important}
+  @page{margin:.6in;size:letter}
+}
+
+/* RESPONSIVE */
+@media(max-width:700px){
+  .fields-row.col3,.fields-row.col4{grid-template-columns:1fr 1fr}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .party-grid{grid-template-columns:1fr}
+  .wr{grid-template-columns:130px 1fr 80px}
+  .lde-row{grid-template-columns:130px 1fr 70px 80px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar no-print">
+  <span class="topbar-title">Development Deal Analyzer &mdash; Frontiera Homes</span>
+  <div class="topbar-actions">
+    <button class="btn btn-ghost" id="mode-btn" onclick="toggleDarkMode()" style="min-width:90px">&#9728; Light</button>
+    <button class="btn btn-ghost" onclick="saveDeal()">Save Deal</button>
+    <button class="btn btn-ghost" id="compare-btn" onclick="toggleCompare()">Compare Saved</button>
+    <button class="btn btn-ghost" onclick="window.print()">Print / PDF</button>
+    <button class="btn btn-ghost" onclick="resetAll()">New Deal</button>
+  </div>
+</div>
+
+<div class="page">
+
+<!-- DEAL INFO -->
+<div class="panel">
+  <p class="panel-title">Deal Information</p>
+  <div class="fields-row col4">
+    <div class="field" style="grid-column:1/3">
+      <label>Development Name</label>
+      <input type="text" id="f-name" value="New Development" oninput="render()">
+    </div>
+    <div class="field">
+      <label>Location / Market</label>
+      <input type="text" id="f-location" value="Ada, MI" oninput="render()">
+    </div>
+    <div class="field">
+      <label>Market Type</label>
+      <select id="f-market" onchange="applyMarketDefaults()">
+        <option value="premium">Premium ($1M+)</option>
+        <option value="suburban">Suburban ($500K–$1M)</option>
+        <option value="lake">Lake / Waterfront</option>
+        <option value="stepdown">Step-Down ($400K–$600K)</option>
+        <option value="rural">Rural / Small Market</option>
+      </select>
+    </div>
+  </div>
+  <div class="fields-row col4">
+    <div class="field">
+      <label>Number of Units</label>
+      <input type="number" id="f-units" value="12" min="1" max="500" oninput="onParamChange()">
+    </div>
+    <div class="field">
+      <label>Avg Sale Price / Unit</label>
+      <input type="number" id="f-price" value="1250000" step="25000" oninput="onParamChange()">
+      <p class="hint" id="hint-price">$1,250,000 per home</p>
+    </div>
+    <div class="field">
+      <label>Acreage</label>
+      <input type="number" id="f-acres" value="20" step="0.5" oninput="onParamChange()">
+      <p class="hint" id="hint-acres">Affects land dev estimate</p>
+    </div>
+    <div class="field">
+      <label>Build Cost / Unit</label>
+      <input type="number" id="f-build" value="800000" step="25000" oninput="onParamChange()">
+      <p class="hint" id="hint-build">64% of sale price</p>
+    </div>
+  </div>
+  <div class="fields-row col4">
+    <div class="field">
+      <label>Build Timeline (months)</label>
+      <input type="number" id="f-months" value="18" min="6" max="60" oninput="render()">
+    </div>
+    <div class="field">
+      <label>LTV % (debt portion)</label>
+      <input type="number" id="f-ltv" value="65" min="40" max="85" oninput="render()">
+    </div>
+    <div class="field">
+      <label>E+J Listing Commission %</label>
+      <input type="number" id="f-comm" value="3" min="1" max="6" step="0.25" oninput="render()">
+    </div>
+    <div class="field">
+      <label>Buyer Agent Commission %</label>
+      <input type="number" id="f-buycomm" value="3" min="0" max="4" step="0.25" oninput="render()">
+    </div>
+  </div>
+
+  <!-- EXISTING STRUCTURES TOGGLE -->
+  <div class="divider"></div>
+  <label class="toggle-row">
+    <span class="toggle"><input type="checkbox" id="t-existing" onchange="render()"><span class="toggle-slider"></span></span>
+    Existing structures on site
+  </label>
+  <div id="existing-fields" style="display:none">
+    <div class="fields-row col4">
+      <div class="field">
+        <label>Number of Structures</label>
+        <input type="number" id="f-structs" value="2" min="1" oninput="render()">
+      </div>
+      <div class="field">
+        <label>Treatment</label>
+        <select id="f-treatment" onchange="render()">
+          <option value="reno">Renovate + Sell</option>
+          <option value="demo">Demolish</option>
+        </select>
+      </div>
+      <div class="field" id="reno-cost-field">
+        <label>Reno Cost / Structure</label>
+        <input type="number" id="f-reno-cost" value="140000" step="5000" oninput="render()">
+      </div>
+      <div class="field" id="reno-sale-field">
+        <label>Sale Price / Renovated Home</label>
+        <input type="number" id="f-reno-sale" value="700000" step="25000" oninput="render()">
+      </div>
+    </div>
+    <div class="fields-row col4" id="demo-fields" style="display:none">
+      <div class="field">
+        <label>Demo Cost / Structure</label>
+        <input type="number" id="f-demo-cost" value="35000" step="5000" oninput="render()">
+      </div>
+    </div>
+    <div class="fields-row col4">
+      <div class="field">
+        <label>Buyer Agent on Reno Sales</label>
+        <input type="number" id="f-reno-buyer-comm" value="30000" step="5000" oninput="render()">
+        <p class="hint">E+J representing sellers of existing structures buying next home</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LAND DEV COST ESTIMATOR -->
+<div class="panel">
+  <p class="panel-title">Land Development Cost Estimator</p>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:8px">
+    <label class="toggle-row" style="margin:0">
+      <span class="toggle"><input type="checkbox" id="t-autodev" checked onchange="toggleAutoLDev()"><span class="toggle-slider"></span></span>
+      <span>Auto-estimate from acreage + units</span>
+    </label>
+    <div style="font-size:11px;color:var(--text3)">Override any line item to use a real number instead of the estimate</div>
+  </div>
+  <div class="lde-row head">
+    <span class="lde-label head">Cost Category</span>
+    <span class="lde-label head">Scale</span>
+    <span class="lde-label head" style="text-align:right">Auto Est.</span>
+    <span class="lde-label head" style="text-align:right">Override</span>
+  </div>
+  <div id="lde-rows"></div>
+  <div class="lde-total" id="lde-total">
+    <span>Total land development cost</span>
+    <strong id="lde-total-val" style="color:var(--amber)">—</strong>
+  </div>
+</div>
+
+<!-- FINANCIAL SLIDERS -->
+<div class="panel">
+  <p class="panel-title">Financial Structure — Sliders</p>
+  <div class="grid2">
+    <div>
+      <div class="slider-group">
+        <div class="sl-header">
+          <span class="sl-label">Land Acquisition Cost</span>
+          <div class="sl-val-wrap"><span class="sl-val navy" id="sv-land">$2,100,000</span></div>
+        </div>
+        <p class="sl-sub" id="ss-land">$105K/acre</p>
+        <input type="range" id="sl-land" min="0" max="5000000" step="25000" value="2100000" oninput="onSliderLand()">
+        <div class="sl-ends"><span>$0</span><span id="sl-land-max-label">max $5M</span></div>
+        <div class="max-override"><label>Override max:</label><input type="number" id="max-land" value="5000000" step="100000" onchange="updateSliderMax('land')"><span style="font-size:9px;color:var(--text3)">$</span></div>
+      </div>
+      <div class="slider-group">
+        <div class="sl-header">
+          <span class="sl-label">Private Debt Rate</span>
+          <div class="sl-val-wrap"><span class="sl-val navy" id="sv-debt">10%</span></div>
+        </div>
+        <p class="sl-sub">Annual rate · debt portion of capital stack</p>
+        <input type="range" id="sl-debt" min="7" max="25" step="0.5" value="10" oninput="onSlider('debt','sv-debt',v=>v+'%')">
+        <div class="sl-ends"><span>7% (best)</span><span>Hard money 10–14%</span><span>25%</span></div>
+      </div>
+      <div class="slider-group">
+        <div class="sl-header">
+          <span class="sl-label">Outside Equity %</span>
+          <div class="sl-val-wrap"><span class="sl-val navy" id="sv-eq">0%</span></div>
+        </div>
+        <p class="sl-sub" id="ss-eq">0% = pure debt structure — Bob controls all equity</p>
+        <input type="range" id="sl-eq" min="0" max="70" step="5" value="0" oninput="onSlider('eq','sv-eq',v=>v+'%','ss-eq',v=>v===0?'0% = pure debt — Bob controls all equity':'Outside investors own '+v+'% of equity')">
+        <div class="sl-ends"><span>0% — debt only</span><span>70%</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="slider-group">
+        <div class="sl-header">
+          <span class="sl-label">Land Development Cost</span>
+          <div class="sl-val-wrap"><span class="sl-val navy" id="sv-ldev">$1,500,000</span></div>
+        </div>
+        <p class="sl-sub" id="ss-ldev">Linked to estimator above — or slide to override</p>
+        <input type="range" id="sl-ldev" min="0" max="5000000" step="25000" value="1500000" oninput="onSliderLdev()">
+        <div class="sl-ends"><span>$0</span><span id="sl-ldev-max-label">max $5M</span></div>
+        <div class="max-override"><label>Override max:</label><input type="number" id="max-ldev" value="5000000" step="100000" onchange="updateSliderMax('ldev')"><span style="font-size:9px;color:var(--text3)">$</span></div>
+      </div>
+      <div class="slider-group">
+        <div class="sl-header">
+          <span class="sl-label">E+J Equity Stake</span>
+          <div class="sl-val-wrap"><span class="sl-val navy" id="sv-ej">0%</span></div>
+        </div>
+        <p class="sl-sub" id="ss-ej">0% = listing commissions only — slide right to add equity</p>
+        <input type="range" id="sl-ej" min="0" max="30" step="1" value="0" oninput="onSlider('ej','sv-ej',v=>v+'%','ss-ej',v=>v===0?'0% = listing commissions only':'E+J own '+v+'% of profit after debt')">
+        <div class="sl-ends"><span>0% — agent only</span><span>10–20% typical sponsor</span><span>30%</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div id="results"></div>
+
+<!-- SAVED DEALS -->
+<div class="deals-bar no-print">
+  <div class="deals-header">
+    <span class="deals-header-title">Saved Deals</span>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span class="deals-header-hint">Click a card to select for comparison · check 2–3 to compare side by side</span>
+      <span class="compare-status" id="compare-status">Comparing 0 deals</span>
+      <button class="btn btn-ghost" id="compare-btn2" onclick="toggleCompare()" style="font-size:10px;padding:3px 10px;background:var(--navy);color:#fff;border-color:var(--navy)">View Comparison ↓</button>
+    </div>
+  </div>
+  <div id="deals-list"><div class="deals-empty">No saved deals yet — click Save Deal in the top bar to save the current analysis</div></div>
+</div>
+
+<!-- COMPARISON PANEL -->
+<div class="compare-panel" id="compare-panel">
+  <p class="panel-title">Side-by-Side Comparison</p>
+  <p style="font-size:11px;color:var(--text3);margin-bottom:.75rem">Check 2–3 deals above to compare them. Current unsaved state is always shown as the baseline.</p>
+  <div id="compare-content"></div>
+</div>
+
+</div><!-- end page -->
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+var ldevOverrides={clearing:null,roads:null,utilities:null,waterSewer:null,stormwater:null,gate:null,engineering:null,lotPrep:null};
+var autoLDev=true;
+var sliderLdevLinked=true;
+var savedDeals=[];
+var selectedForCompare=[];
+var ldevManualTotal=1500000;
+
+var LDE_CATEGORIES=[
+  {key:'clearing',label:'Clearing + grading',formula:function(a,u){return Math.round(a*5000);},scaleLabel:'$5K/acre'},
+  {key:'roads',label:'Private road (~150 LF/unit)',formula:function(a,u){return Math.round(u*45000);},scaleLabel:'$45K/unit'},
+  {key:'utilities',label:'Underground utilities (elec, gas, telecom)',formula:function(a,u){return Math.round(u*15000);},scaleLabel:'$15K/unit'},
+  {key:'waterSewer',label:'Water + sewer mains + connections',formula:function(a,u){return Math.round(u*22000);},scaleLabel:'$22K/unit'},
+  {key:'stormwater',label:'Stormwater management + detention',formula:function(a,u){return Math.round(a*8000);},scaleLabel:'$8K/acre'},
+  {key:'gate',label:'Entry gate + monumentation + landscaping',formula:function(a,u){return 100000;},scaleLabel:'Flat'},
+  {key:'engineering',label:'Civil engineering, survey + permits',formula:function(a,u){return 0;},scaleLabel:'12% of above'},
+  {key:'lotPrep',label:'Individual lot prep (grading, driveway cuts)',formula:function(a,u){return Math.round(u*7000);},scaleLabel:'$7K/unit'}
+];
+
+// ── HELPERS ────────────────────────────────────────────────────────────────
+function v(id){return document.getElementById(id);}
+function gn(id){return parseFloat(v(id).value)||0;}
+function gs(id){return v(id).value;}
+function fmt(n){if(n===0)return'$0';return(n<0?'−':'')+'$'+Math.abs(Math.round(n)).toLocaleString();}
+function fmtM(n){var a=Math.abs(n),s=a>=1000000?'$'+(Math.round(a/10000)/100).toFixed(1)+'M':'$'+Math.round(a/1000)+'K';return(n<0?'−':'')+s;}
+function bar(val,mx,col){var p=mx>0?Math.min(100,Math.round(Math.abs(val)/mx*100)):0;return'<div class="wb-wrap"><div class="wb-inner" style="width:'+p+'%;background:'+col+'"></div></div>';}
+function pct(n,d){return d>0?Math.round(n/d*100):0;}
+
+// ── LDE AUTO ESTIMATE ──────────────────────────────────────────────────────
+function calcLDEItems(){
+  var a=gn('f-acres'),u=gn('f-units');
+  var items={};
+  var subtotal=0;
+  LDE_CATEGORIES.forEach(function(c){
+    if(c.key!=='engineering'){
+      var auto=c.formula(a,u);
+      items[c.key]=(ldevOverrides[c.key]!==null?ldevOverrides[c.key]:auto);
+      if(c.key!=='engineering') subtotal+=items[c.key];
+    }
+  });
+  var engAuto=Math.round(subtotal*0.12);
+  items.engineering=(ldevOverrides.engineering!==null?ldevOverrides.engineering:engAuto);
+  var total=0;
+  Object.keys(items).forEach(function(k){total+=items[k];});
+  return{items:items,total:total};
+}
+
+function getLDevTotal(){
+  if(autoLDev){return calcLDEItems().total;}
+  return Math.round(parseFloat(v('sl-ldev').value)||0);
+}
+
+function renderLDE(){
+  var a=gn('f-acres'),u=gn('f-units');
+  var {items,total}=calcLDEItems();
+  var maxItem=Math.max.apply(null,Object.values(items));
+  var html='';
+  LDE_CATEGORIES.forEach(function(c){
+    var auto=c.key==='engineering'?Math.round((items.clearing+items.roads+items.utilities+items.waterSewer+items.stormwater)*0.12):c.formula(a,u);
+    var override=ldevOverrides[c.key];
+    var displayed=override!==null?override:auto;
+    html+='<div class="lde-row">';
+    html+='<span class="lde-label">'+c.label+'</span>';
+    html+=bar(displayed,maxItem,'#C8822A');
+    html+='<span class="lde-auto">'+fmt(auto)+'</span>';
+    html+='<input class="lde-input" type="number" value="'+(override!==null?override:'')+'" placeholder="'+auto+'" data-key="'+c.key+'" onchange="overrideLDE(this)" step="5000">';
+    html+='</div>';
+  });
+  v('lde-rows').innerHTML=html;
+  v('lde-total-val').textContent=fmt(total);
+
+  if(autoLDev){
+    var slmax=Math.max(total*2,2000000);
+    v('sl-ldev').max=slmax;
+    v('sl-ldev').value=total;
+    v('sv-ldev').textContent=fmtM(total);
+    v('sl-ldev-max-label').textContent='max '+fmtM(slmax);
+    v('max-ldev').value=slmax;
+    ldevManualTotal=total;
+  }
+}
+
+function overrideLDE(el){
+  var key=el.getAttribute('data-key');
+  var val=el.value===''?null:parseFloat(el.value);
+  ldevOverrides[key]=val;
+  renderLDE();
+  if(autoLDev) render();
+}
+
+function toggleAutoLDev(){
+  autoLDev=v('t-autodev').checked;
+  renderLDE();
+  render();
+}
+
+// ── PARAMETER CHANGES ──────────────────────────────────────────────────────
+function onParamChange(){
+  var units=gn('f-units'),price=gn('f-price'),acres=gn('f-acres'),build=gn('f-build');
+  v('hint-price').textContent='$'+price.toLocaleString()+' per home';
+  v('hint-build').textContent=price>0?Math.round(build/price*100)+'% of sale price':'—';
+  v('hint-acres').textContent='~'+Math.round(acres/units*10)/10+' acres/unit';
+
+  // Auto-scale land slider
+  var landMax=Math.max(Math.round(units*price*0.35/100000)*100000,3000000);
+  v('sl-land').max=landMax;
+  v('max-land').value=landMax;
+  v('sl-land-max-label').textContent='max '+fmtM(landMax);
+
+  renderLDE();
+  render();
+}
+
+function onSliderLand(){
+  var val=parseFloat(v('sl-land').value);
+  v('sv-land').textContent=fmt(val);
+  v('ss-land').textContent='$'+Math.round(val/gn('f-acres')/1000)+'K/acre';
+  render();
+}
+
+function onSliderLdev(){
+  var val=parseFloat(v('sl-ldev').value);
+  ldevManualTotal=val;
+  v('sv-ldev').textContent=fmtM(val);
+  v('ss-ldev').textContent='Manual override — estimator unlinked';
+  autoLDev=false;
+  v('t-autodev').checked=false;
+  render();
+}
+
+function onSlider(id,valId,fmtFn,subId,subFn){
+  var val=parseFloat(v('sl-'+id).value);
+  v(valId).textContent=fmtFn(val);
+  if(subId&&subFn) v(subId).textContent=subFn(val);
+  render();
+}
+
+function updateSliderMax(type){
+  var newMax=parseFloat(v('max-'+type).value)||0;
+  v('sl-'+type).max=newMax;
+  v('sl-'+type+'-max-label').textContent='max '+fmtM(newMax);
+}
+
+function applyMarketDefaults(){
+  var mkt=gs('f-market');
+  var defaults={
+    premium:{price:1250000,build:800000,comm:3},
+    suburban:{price:700000,build:450000,comm:3},
+    lake:{price:1500000,build:900000,comm:3},
+    stepdown:{price:550000,build:340000,comm:2.5},
+    rural:{price:350000,build:220000,comm:3}
+  };
+  var d=defaults[mkt];
+  if(d){v('f-price').value=d.price;v('f-build').value=d.build;v('f-comm').value=d.comm;}
+  onParamChange();
+}
+
+// ── EXISTING STRUCTURES ────────────────────────────────────────────────────
+function updateStructureUI(){
+  var show=v('t-existing').checked;
+  v('existing-fields').style.display=show?'block':'none';
+}
+
+function render(){
+  updateStructureUI();
+  var treatment=gs('f-treatment');
+  v('reno-cost-field').style.display=treatment==='reno'?'':'none';
+  v('reno-sale-field').style.display=treatment==='reno'?'':'none';
+  v('demo-fields').style.display=treatment==='demo'?'block':'none';
+
+  renderResults(calcDeal());
+  renderDeals();
+  if(selectedForCompare.length>=2) renderComparison();
+}
+
+// ── CALCULATION ────────────────────────────────────────────────────────────
+function calcDeal(overrideName){
+  var units=gn('f-units'),price=gn('f-price'),buildPU=gn('f-build');
+  var months=gn('f-months'),ltv=gn('f-ltv')/100,commPct=gn('f-comm')/100;
+  var buyCommPct=gn('f-buycomm')/100;
+  var land=parseFloat(v('sl-land').value)||0;
+  var ldev=autoLDev?calcLDEItems().total:ldevManualTotal;
+  var debtRate=parseFloat(v('sl-debt').value)||10;
+  var outsideEq=parseFloat(v('sl-eq').value)||0;
+  var ejEq=parseFloat(v('sl-ej').value)||0;
+
+  // Existing structures
+  var hasExisting=v('t-existing').checked;
+  var structs=gn('f-structs'),treatment=gs('f-treatment');
+  var renoAdj=0,demoAdj=0,renoSaleRev=0,structComm1099=0;
+  if(hasExisting){
+    if(treatment==='reno'){
+      renoAdj=structs*gn('f-reno-cost');
+      renoSaleRev=structs*gn('f-reno-sale');
+      var renoListComm=structs*gn('f-reno-sale')*commPct;
+      structComm1099=renoListComm+gn('f-reno-buyer-comm');
+    } else {
+      demoAdj=structs*gn('f-demo-cost');
+    }
+  }
+
+  var netLand=land+renoAdj+demoAdj-renoSaleRev;
+  var totalBuild=units*buildPU;
+  var totalCost=netLand+ldev+totalBuild;
+  var devRev=units*price;
+  var devProfit=devRev-totalCost;
+  var debtAmt=totalCost*ltv;
+  var debtSvc=debtAmt*(debtRate/100)*(months/12);
+  var pad=devProfit-debtSvc;
+
+  var listComm=devRev*commPct;
+  var buyerComm=devRev*buyCommPct;
+  var comm1099=listComm+structComm1099;
+  var ejShare=pad*(ejEq/100);
+  var outShare=pad*(outsideEq/100);
+  var bobEqPct=Math.max(0,1-((outsideEq+ejEq)/100));
+  var bobShare=pad*bobEqPct;
+  var ejTotal=comm1099+ejShare;
+
+  var margin=devRev>0?pct(pad,devRev):0;
+  var hc=margin>=18?'g':margin>=10?'w':'r';
+  var hl=margin>=18?'Strong':margin>=10?'Tight':'Thin';
+
+  return{
+    name:overrideName||gs('f-name'),location:gs('f-location'),
+    units,price,buildPU,months,ltv,debtRate,outsideEq,ejEq,
+    land,ldev,netLand,renoAdj,demoAdj,renoSaleRev,structComm1099,
+    totalBuild,totalCost,devRev,devProfit,debtAmt,debtSvc,pad,
+    listComm,buyerComm,comm1099,ejShare,outShare,bobShare,ejTotal,bobEqPct,
+    margin,hc,hl,hasExisting,treatment,structs
+  };
+}
+
+// ── RENDER RESULTS ─────────────────────────────────────────────────────────
+function renderResults(d){
+  var mx=d.devRev;var h='';
+
+  if(d.pad<0){
+    h+='<div class="warn-banner"><strong>Deal does not work at current inputs.</strong> Profit after debt service is '+fmt(d.pad)+'. Reduce land cost, land dev cost, or debt rate — or increase sale price per unit.</div>';
+  }
+
+  // KPIs
+  h+='<div class="kpi-grid">';
+  h+='<div class="kpi"><p class="k-label">Gross Revenue</p><p class="k-v n">'+fmtM(d.devRev)+'</p><p class="k-sub">'+d.units+' units × '+fmt(d.price)+'</p></div>';
+  h+='<div class="kpi"><p class="k-label">Total Project Cost</p><p class="k-v">'+fmtM(d.totalCost)+'</p><p class="k-sub">Net land + dev + build</p></div>';
+  h+='<div class="kpi '+(d.margin>=15?'good':d.margin>=8?'warn':'bad')+'"><p class="k-label">Profit After Debt <span class="h '+d.hc+'">'+d.hl+' · '+d.margin+'%</span></p><p class="k-val '+d.hc+'">'+fmtM(d.pad)+'</p><p class="k-sub">After all costs + '+d.debtRate+'% debt service</p></div>';
+  h+='<div class="kpi navy"><p class="k-label">E+J Total Income</p><p class="k-val n">'+fmtM(d.ejTotal)+'</p><p class="k-sub">'+(parseFloat(v('sl-ej').value)===0?'Commissions only':'Comm + '+parseFloat(v('sl-ej').value)+'% equity')+'</p></div>';
+  h+='</div>';
+
+  // Waterfall
+  h+='<div class="panel"><p class="panel-title">Cost Waterfall</p>';
+  h+='<div class="wf-table">';
+  h+='<div class="wr"><span class="wl">Revenue ('+d.units+' units × '+fmt(d.price)+')</span>'+bar(d.devRev,mx,'#1A3A6A')+'<span class="wv n">'+fmt(d.devRev)+'</span></div>';
+  h+='<div class="wr"><span class="wl">Land acquisition</span>'+bar(d.land,mx,'#888880')+'<span class="wv r">−'+fmt(d.land)+'</span></div>';
+  if(d.hasExisting){
+    if(d.treatment==='reno'){
+      h+='<div class="wr sub"><span class="wl">↳ Renovation ('+d.structs+' structures)</span>'+bar(d.renoAdj,mx,'#C8A000')+'<span class="wv a">−'+fmt(d.renoAdj)+'</span></div>';
+      h+='<div class="wr sub"><span class="wl">↳ Renovated home sales</span>'+bar(d.renoSaleRev,mx,'#1A6A3A')+'<span class="wv g">+'+fmt(d.renoSaleRev)+'</span></div>';
+    } else {
+      h+='<div class="wr sub"><span class="wl">↳ Demo ('+d.structs+' structures)</span>'+bar(d.demoAdj,mx,'#8A1A1A')+'<span class="wv r">−'+fmt(d.demoAdj)+'</span></div>';
+    }
+    h+='<div class="wr sub" style="border-bottom:1px solid var(--border-strong)"><span class="wl" style="font-weight:600">↳ Net effective land cost</span>'+bar(d.netLand,mx,'#7A4A0A')+'<span class="wv a">'+fmt(d.netLand)+'</span></div>';
+  }
+  h+='<div class="wr"><span class="wl" style="color:var(--amber);font-weight:500">Land development costs</span>'+bar(d.ldev,mx,'#C8822A')+'<span class="wv a">−'+fmt(d.ldev)+'</span></div>';
+  h+='<div class="wr"><span class="wl">Build cost ('+d.units+' units × '+fmt(d.buildPU)+')</span>'+bar(d.totalBuild,mx,'#4A4A44')+'<span class="wv r">−'+fmt(d.totalBuild)+'</span></div>';
+  h+='<div class="wr tot" style="border-top:1px solid var(--border-strong)"><span class="wl">Total project cost</span>'+bar(d.totalCost,mx,'#1A1A18')+'<span class="wv">'+fmt(d.totalCost)+'</span></div>';
+  h+='<div class="wr sub" style="border-bottom:1px solid var(--border-strong)"><span class="wl">↳ Debt service ('+d.debtRate+'% × '+d.months+'mo on '+pct(d.debtAmt,d.totalCost)+'% LTV)</span>'+bar(d.debtSvc,mx,'#8A1A1A')+'<span class="wv r">−'+fmt(d.debtSvc)+'</span></div>';
+  h+='<div class="wr tot"><span class="wl">Profit after debt</span>'+bar(Math.max(0,d.pad),mx,'#1A6A3A')+'<span class="wv '+(d.pad>0?'g':'r')+'">'+fmt(d.pad)+'</span></div>';
+  if(d.outsideEq>0) h+='<div class="wr sub"><span class="wl">↳ Outside investors ('+d.outsideEq+'%)</span>'+bar(d.outShare,mx,'#5A5A54')+'<span class="wv">'+fmt(d.outShare)+'</span></div>';
+  if(d.ejEq>0) h+='<div class="wr sub"><span class="wl">↳ E+J equity share ('+d.ejEq+'%)</span>'+bar(d.ejShare,mx,'#1A5A3A')+'<span class="wv g">'+fmt(d.ejShare)+'</span></div>';
+  h+='<div class="wr sub"><span class="wl">↳ Bob Snowden ('+Math.round(d.bobEqPct*100)+'%)</span>'+bar(d.bobShare,mx,'#7A4A0A')+'<span class="wv a">'+fmt(d.bobShare)+'</span></div>';
+  h+='</div></div>';
+
+  // Parties
+  h+='<div class="party-grid">';
+  h+='<div class="party priv"><p class="p-name">Private Lender</p><p class="p-role">Debt only · '+d.debtRate+'% annual · '+d.months+'mo · secured by property · no equity upside</p>';
+  h+='<div class="p-row"><span class="p-rl">Loan ('+Math.round(d.ltv*100)+'% LTV)</span><span class="p-rv n">'+fmt(d.debtAmt)+'</span></div>';
+  h+='<div class="p-row"><span class="p-rl">Interest earned</span><span class="p-rv n">'+fmt(d.debtSvc)+'</span></div>';
+  h+='<div class="p-row"><span class="p-rl">Profit participation</span><span class="p-rv mu">None</span></div>';
+  h+='<div class="p-tot"><span class="p-tl">Total return</span><span class="p-tv">'+fmt(d.debtSvc)+'</span></div></div>';
+
+  h+='<div class="party bob"><p class="p-name">Bob Snowden</p><p class="p-role">Build operator · '+Math.round(d.bobEqPct*100)+'% of equity · no capital at risk</p>';
+  h+='<div class="p-row"><span class="p-rl">Equity share of profit</span><span class="p-rv a">'+fmt(d.bobShare)+'</span></div>';
+  if(d.outsideEq>0) h+='<div class="p-row"><span class="p-rl">Outside investor portion</span><span class="p-rv mu">'+fmt(d.outShare)+'</span></div>';
+  h+='<div class="p-row"><span class="p-rl">Commission income</span><span class="p-rv mu">$0</span></div>';
+  h+='<div class="p-tot"><span class="p-tl">Total return</span><span class="p-tv">'+fmt(d.bobShare)+'</span></div></div>';
+
+  h+='<div class="party ej"><p class="p-name">Eric + Jared</p><p class="p-role">'+d.ejEq+'% equity + 1099 commissions · zero capital at risk</p>';
+  h+='<div class="p-row"><span class="p-rl">Listing commission ('+gn('f-comm')+'%)</span><span class="p-rv g">'+fmt(d.listComm)+'</span></div>';
+  if(d.hasExisting&&d.structComm1099>0) h+='<div class="p-row"><span class="p-rl">Reno listing + buyer agent</span><span class="p-rv g">'+fmt(d.structComm1099)+'</span></div>';
+  h+='<div class="p-row"><span class="p-rl">'+d.ejEq+'% equity share</span><span class="p-rv '+(d.ejEq>0?'g':'mu')+'">'+fmt(d.ejShare)+'</span></div>';
+  h+='<div class="p-row"><span class="p-rl">Capital at risk</span><span class="p-rv g">$0</span></div>';
+  h+='<div class="p-tot"><span class="p-tl">Total income</span><span class="p-tv">'+fmt(d.ejTotal)+'</span></div></div>';
+  h+='</div>';
+
+  // Note
+  var sensitivity='<strong>Key sensitivities:</strong> Every $50K increase in unit price adds '+fmtM(d.units*50000)+' in revenue. Each 1% saved on debt rate saves '+fmt(Math.round(d.debtAmt*0.01*(d.months/12)))+' in debt service. Land dev cost is the most uncertain line — a civil engineer walk is worth '+fmtM(Math.round(d.ldev*0.1))+' in deal certainty. '+(d.ejEq===0?'<strong>E+J earn '+fmt(d.comm1099)+' in commissions at 0% equity.</strong> Slide E+J equity to see the difference.':'<strong>E+J earn '+fmt(d.ejTotal)+' total</strong> — '+fmt(d.comm1099)+' in 1099 commissions + '+fmt(d.ejShare)+' equity.');
+  h+='<div class="note">'+sensitivity+'</div>';
+
+  v('results').innerHTML=h;
+}
+
+// ── SAVE / LOAD / COMPARE ──────────────────────────────────────────────────
+function saveDeal(){
+  var d=calcDeal();
+  d._id=Date.now();
+  d._sliders={land:parseFloat(v('sl-land').value),ldev:autoLDev?calcLDEItems().total:ldevManualTotal,debt:parseFloat(v('sl-debt').value),eq:parseFloat(v('sl-eq').value),ej:parseFloat(v('sl-ej').value)};d.acres=gn('f-acres');
+  savedDeals.push(d);
+  try{localStorage.setItem('devDeals',JSON.stringify(savedDeals));}catch(e){}
+  renderDeals();
+}
+
+function deleteDeal(id){
+  savedDeals=savedDeals.filter(function(d){return d._id!==id;});
+  selectedForCompare=selectedForCompare.filter(function(i){return i!==id;});
+  try{localStorage.setItem('devDeals',JSON.stringify(savedDeals));}catch(e){}
+  renderDeals();
+  renderComparison();
+}
+
+function toggleDealCompare(id,checked){
+  if(checked){
+    if(selectedForCompare.length>=3){alert('Maximum 3 deals can be compared at once. Deselect one first.');return;}
+    if(selectedForCompare.indexOf(id)===-1) selectedForCompare.push(id);
+  } else {
+    selectedForCompare=selectedForCompare.filter(function(i){return i!==id;});
+  }
+  renderDeals();
+  if(selectedForCompare.length>=2){
+    v('compare-panel').classList.add('show');
+    renderComparison();
+  } else {
+    v('compare-panel').classList.remove('show');
+  }
+}
+
+function loadDeal(id){
+  var d=savedDeals.find(function(x){return x._id===id;});
+  if(!d) return;
+  if(!confirm('Load "'+d.name+'"? This will replace your current inputs.')) return;
+  v('f-name').value=d.name;
+  v('f-location').value=d.location||'';
+  v('f-units').value=d.units;
+  v('f-price').value=d.price;
+  v('f-acres').value=d.acres||gn('f-acres');
+  v('f-build').value=d.buildPU;
+  v('f-months').value=d.months;
+  v('f-ltv').value=Math.round(d.ltv*100);
+  if(d._sliders){
+    v('sl-land').value=d._sliders.land;
+    v('sv-land').textContent=fmt(d._sliders.land);
+    v('sl-debt').value=d._sliders.debt;
+    v('sv-debt').textContent=d._sliders.debt+'%';
+    v('sl-eq').value=d._sliders.eq;
+    v('sv-eq').textContent=d._sliders.eq+'%';
+    v('sl-ej').value=d._sliders.ej;
+    v('sv-ej').textContent=d._sliders.ej+'%';
+  }
+  onParamChange();
+  window.scrollTo(0,0);
+}
+
+function duplicateDeal(id){
+  var d=savedDeals.find(function(x){return x._id===id;});
+  if(!d) return;
+  var copy=JSON.parse(JSON.stringify(d));
+  copy._id=Date.now();
+  copy.name=d.name+' (copy)';
+  savedDeals.push(copy);
+  try{localStorage.setItem('devDeals',JSON.stringify(savedDeals));}catch(e){}
+  renderDeals();
+}
+
+function toggleCompare(){
+  var panel=v('compare-panel');
+  if(panel.classList.contains('show')) panel.classList.remove('show');
+  else{panel.classList.add('show');renderComparison();}
+}
+
+function renderDeals(){
+  if(savedDeals.length===0){
+    v('deals-list').innerHTML='<div class="deals-empty">No saved deals yet — click Save Deal in the top bar to save the current analysis</div>';
+    var cs=v('compare-status');if(cs){cs.classList.remove('show');}
+    return;
+  }
+  var sel=selectedForCompare.length;
+  var cs=v('compare-status');
+  if(cs){
+    if(sel>=2){cs.textContent='Comparing '+sel+' deal'+(sel>1?'s':'');cs.classList.add('show');}
+    else{cs.textContent='Select 2+ to compare';cs.classList.toggle('show',sel>0);}
+  }
+  var h='<div class="deals-grid">';
+  h+=savedDeals.map(function(d){
+    var isSel=selectedForCompare.indexOf(d._id)!==-1;
+    var mar=d.margin||0;
+    var marCls=mar>=15?'g':mar>=8?'a':'r';
+    return'<div class="deal-card'+(isSel?' selected':'')+'" onclick="toggleDealCompare('+d._id+','+!isSel+')">'+
+      '<div class="deal-card-check">'+(isSel?'&#10003;':'')+'</div>'+
+      '<p class="deal-card-name">'+d.name+'</p>'+
+      '<p class="deal-card-loc">'+d.location+(d.location?' · ':'')+d.units+' units</p>'+
+      '<div class="deal-card-stats">'+
+        '<div class="deal-stat"><span class="deal-stat-label">Profit after debt</span><br><span class="deal-stat-val '+marCls+'">'+fmtM(d.pad)+'</span></div>'+
+        '<div class="deal-stat"><span class="deal-stat-label">Margin</span><br><span class="deal-stat-val '+marCls+'">'+mar+'%</span></div>'+
+        '<div class="deal-stat"><span class="deal-stat-label">E+J income</span><br><span class="deal-stat-val n">'+fmtM(d.ejTotal)+'</span></div>'+
+        '<div class="deal-stat"><span class="deal-stat-label">Bob return</span><br><span class="deal-stat-val a">'+fmtM(d.bobShare)+'</span></div>'+
+      '</div>'+
+      '<div class="deal-card-actions">'+
+        '<button class="deal-card-btn load" onclick="event.stopPropagation();loadDeal('+d._id+')">Load</button>'+
+        '<button class="deal-card-btn" onclick="event.stopPropagation();duplicateDeal('+d._id+')">Duplicate</button>'+
+        '<button class="deal-card-btn del" onclick="event.stopPropagation();deleteDeal('+d._id+')">Delete</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
+  h+='</div>';
+  v('deals-list').innerHTML=h;
+}
+
+function renderComparison(){
+  var deals=savedDeals.filter(function(d){return selectedForCompare.indexOf(d._id)!==-1;});
+  if(deals.length<2){v('compare-content').innerHTML='<p style="font-size:11px;color:var(--text3)">Select at least 2 saved deals to compare.</p>';return;}
+
+  var rows=[
+    {label:'Units',fn:function(d){return d.units;}},
+    {label:'Price / unit',fn:function(d){return fmt(d.price);}},
+    {label:'Land acquisition',fn:function(d){return fmt(d._sliders.land);}},
+    {label:'Land dev cost',fn:function(d){return fmt(d._sliders.ldev);}},
+    {label:'Debt rate',fn:function(d){return d._sliders.debt+'%';}},
+    {label:'E+J equity',fn:function(d){return d._sliders.ej+'%';}},
+    {label:'Gross revenue',fn:function(d){return fmtM(d.devRev);}},
+    {label:'Total project cost',fn:function(d){return fmtM(d.totalCost);}},
+    {label:'Debt service',fn:function(d){return fmtM(d.debtSvc);}},
+    {label:'Dev profit',fn:function(d){return fmtM(d.devP||d.devProfit);}},
+    {label:'Profit after debt',fn:function(d){return fmtM(d.pad);},highlight:true,better:'high'},
+    {label:'Net margin',fn:function(d){return d.margin+'%';},highlight:true,better:'high'},
+    {label:'Private lender return',fn:function(d){return fmtM(d.debtSvc);}},
+    {label:'Bob return',fn:function(d){return fmtM(d.bobShare);}},
+    {label:'E+J commissions (1099)',fn:function(d){return fmtM(d.comm1099);}},
+    {label:'E+J total income',fn:function(d){return fmtM(d.ejTotal);},highlight:true,better:'high'},
+  ];
+
+  var h='<div style="overflow-x:auto"><table class="ctable">';
+  h+='<thead><tr><th>Metric</th>';
+  deals.forEach(function(d){h+='<th>'+d.name+'</th>';});
+  h+='</tr></thead><tbody>';
+
+  rows.forEach(function(row){
+    var vals=deals.map(function(d){return row.fn(d);});
+    var nums=deals.map(function(d){return parseFloat(row.fn(d).replace(/[^0-9.\-]/g,''));});
+    var maxIdx=-1,minIdx=-1;
+    if(row.highlight){
+      var maxVal=Math.max.apply(null,nums),minVal=Math.min.apply(null,nums);
+      maxIdx=nums.indexOf(maxVal);minIdx=nums.indexOf(minVal);
+    }
+    h+='<tr'+(row.highlight?' class="tot-row"':'')+'>'+
+      '<td>'+row.label+'</td>'+
+      vals.map(function(v,i){
+        var cls='';
+        if(row.highlight&&row.better==='high'){
+          if(i===maxIdx) cls=' class="best"';
+          else if(i===minIdx) cls=' class="worst"';
+        }
+        return'<td'+cls+'>'+v+'</td>';
+      }).join('')+
+      '</tr>';
+  });
+
+  h+='</tbody></table></div>';
+  v('compare-content').innerHTML=h;
+}
+
+function resetAll(){
+  if(!confirm('Start a new deal? Current inputs will be cleared.')) return;
+  v('f-name').value='New Development';
+  v('f-location').value='';
+  v('f-market').value='premium';
+  v('f-units').value=10;
+  v('f-price').value=1250000;
+  v('f-acres').value=15;
+  v('f-build').value=800000;
+  v('f-months').value=18;
+  v('f-ltv').value=65;
+  v('f-comm').value=3;
+  v('f-buycomm').value=3;
+  v('t-existing').checked=false;
+  v('sl-land').value=0;v('sv-land').textContent='$0';
+  v('sl-debt').value=10;v('sv-debt').textContent='10%';
+  v('sl-eq').value=0;v('sv-eq').textContent='0%';
+  v('sl-ej').value=0;v('sv-ej').textContent='0%';
+  ldevOverrides={clearing:null,roads:null,utilities:null,waterSewer:null,stormwater:null,gate:null,engineering:null,lotPrep:null};
+  autoLDev=true;v('t-autodev').checked=true;
+  onParamChange();
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+try{var stored=localStorage.getItem('devDeals');if(stored)savedDeals=JSON.parse(stored);}catch(e){}
+v('t-existing').addEventListener('change',render);
+v('f-treatment').addEventListener('change',render);
+onParamChange();
+renderDeals();
+</script>
+<script>
+// ── DARK MODE ──────────────────────────────────────────────────────────────
+function toggleDarkMode(){
+  var isDark=document.documentElement.classList.toggle('dark');
+  try{localStorage.setItem('devDarkMode',isDark?'1':'0');}catch(e){}
+  updateModeBtn(isDark);
+}
+function updateModeBtn(isDark){
+  var btn=document.getElementById('mode-btn');
+  if(btn) btn.textContent=isDark?'\u2600 Light':'\u263D Dark';
+}
+// Init dark mode from localStorage
+(function(){
+  var pref;
+  try{pref=localStorage.getItem('devDarkMode');}catch(e){}
+  var isDark=pref==='1';
+  if(isDark) document.documentElement.classList.add('dark');
+  updateModeBtn(isDark);
+})();
+</script>
+</body>
+</html>
